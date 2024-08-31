@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: ./server/Dockerfile
+    container_name: server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./download_server:/app/downloads # Mounts the local 'download_server' folder to '/app/download' in the container
+    networks:
+      - app-network
+  client:
+    build:
+      context: .
+      dockerfile: ./client/Dockerfile
+    container_name: client
+    depends_on:
+      - server
+    volumes:
+      - ./data:/app/data        # Mounts the local 'data' folder to '/app/data' in the container
+      - ./download_client:/app/downloads # Mounts the local 'download' folder to '/app/download' in the container
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
