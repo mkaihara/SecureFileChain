@@ -23,6 +23,17 @@ import (
 	"time"
 )
 
+// Custom transport that automatically adds JWT token to the Authorization header
+type transportWithToken struct {
+	transport http.RoundTripper
+	token     string
+}
+
+func (t *transportWithToken) RoundTrip(req *http.Request) (*http.Response, error) {
+	req.Header.Add("Authorization", "Bearer "+t.token)
+	return t.transport.RoundTrip(req)
+}
+
 // GenerateKeyPair generates a new ECDSA key pair (private and public keys).
 func GenerateKeyPair() (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
 	privateKey, publicKey, err := crypto.GenerateKeys()
@@ -326,6 +337,38 @@ func CheckMerkleRoot(serverURL string, client *http.Client, clientMerkleRoot str
 	return nil
 }
 
+func login(client *http.Client, serverURL string, username, password string) (string, error) {
+	creds := map[string]string{
+		"username": username,
+		"password": password,
+	}
+	jsonCreds, _ := json.Marshal(creds)
+
+	req, err := http.NewRequest("POST", serverURL+"/login", bytes.NewBuffer(jsonCreds))
+	if err != nil {
+		return "", fmt.Errorf("could not create login request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("could not perform login request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("login failed: %v", resp.Status)
+	}
+
+	// Extract token from response cookie
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "token" {
+			return cookie.Value, nil
+		}
+	}
+	return "", fmt.Errorf("no token found")
+}
+
 func main() {
 	serverURL := "https://server:443"
 
@@ -334,11 +377,34 @@ func main() {
 		InsecureSkipVerify: true, // ONLY for development with self-signed certificates
 	}
 
+	baseTransport := &http.Transport{
+		TLSClientConfig: tlsConfig,
+	}
+
 	client := &http.Client{
 		Timeout: time.Second * 10,
-		Transport: &http.Transport{
-			TLSClientConfig: tlsConfig,
+		Transport: &transportWithToken{
+			transport: baseTransport,
+			token:     "", // Token will be set after login
 		},
+	}
+
+	// Login to the server to obtain a token
+	log.Println("----------------------------------------")
+	log.Println("Logging in to the server...")
+	log.Println("----------------------------------------")
+	token, err := login(client, serverURL, "user", "secret_password")
+	if err != nil {
+		log.Fatalf("Login failed: %v", err)
+	}
+	log.Println("----------------------------------------")
+	log.Println("Login successful, received token:", token)
+	log.Println("----------------------------------------")
+
+	// Update the client transport to include the JWT token
+	client.Transport = &transportWithToken{
+		transport: baseTransport,
+		token:     token,
 	}
 
 	directory := "/app/data"
