@@ -2,6 +2,9 @@ version: '3.8'
 
 services:
   server:
+    environment:
+      - SERVER_USERNAME=username
+      - SERVER_PASSWORD=secret_password
     build:
       context: .
       dockerfile: ./server/Dockerfile
@@ -13,6 +16,12 @@ services:
     networks:
       - app-network
   client:
+    environment:
+      - CLIENT_USERNAME=username
+      - CLIENT_PASSWORD=secret_password
+      - NUM_FILES_TO_CREATE=20   # Number of files to create in the 'data' folder
+      - INDEX_TO_DOWNLOAD=10     # Index of the file to download from the server in the range [0, NUM_FILES_TO_CREATE-1]
+      - MAX_RETRIES_UPLOAD=3     # Maximum number of retries to upload a file to the server      
     build:
       context: .
       dockerfile: ./client/Dockerfile

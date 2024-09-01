@@ -19,6 +19,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -393,7 +394,12 @@ func main() {
 	log.Println("----------------------------------------")
 	log.Println("Logging in to the server...")
 	log.Println("----------------------------------------")
-	token, err := login(client, serverURL, "user", "secret_password")
+
+	// Use environment variables for credentials
+	username := os.Getenv("CLIENT_USERNAME")
+	password := os.Getenv("CLIENT_PASSWORD")
+
+	token, err := login(client, serverURL, username, password)
 	if err != nil {
 		log.Fatalf("Login failed: %v", err)
 	}
@@ -413,10 +419,18 @@ func main() {
 	clientDownloadDirectory := "/app/downloads"
 	log.Printf("Directory of the file to download from the server: %s", clientDownloadDirectory)
 
-	maxretries := 3 // Maximum number of retries for file uploads
+	maxRetriesStr := os.Getenv("MAX_RETRIES_UPLOAD") // Maximum number of retries for file uploads
+	maxretries, err := strconv.Atoi(maxRetriesStr)
+	if err != nil {
+		log.Fatalf("Error converting MAX_RETRIES_UPLOAD to int: %v", err)
+	}
 	log.Printf("Maxmum number of retries for file uploads: %d", maxretries)
 
-	fileIndexToVerify := 10 // Index of the file to verify after uploading
+	fileIndexToVerifyStr := os.Getenv("INDEX_TO_DOWNLOAD") // Index of the file to verify after uploading
+	fileIndexToVerify, err := strconv.Atoi(fileIndexToVerifyStr)
+	if err != nil {
+		log.Fatalf("Error converting INDEX_TO_DOWNLOAD to int: %v", err)
+	}
 	log.Printf("Index of the file to verify after uploading: %d", fileIndexToVerify)
 
 	log.Println("Starting file upload and download process...")
@@ -444,7 +458,11 @@ func main() {
 
 	// Create and write files in the data directory
 	log.Println("Creating files in the data directory on the client side...")
-	numFiles := 20
+	numFilesStr := os.Getenv("NUM_FILES_TO_CREATE") // Number of files to create
+	numFiles, err := strconv.Atoi(numFilesStr)
+	if err != nil {
+		log.Fatalf("Error converting NUM_FILES_TO_CREATE to int: %v", err)
+	}
 	log.Printf("Number of files to create: %d", numFiles)
 	for i := 0; i < numFiles; i++ {
 		filename := filepath.Join(directory, fmt.Sprintf("file_%03d.txt", i+1))

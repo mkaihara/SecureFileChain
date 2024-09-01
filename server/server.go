@@ -43,8 +43,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Use environment variables for credentials
+	username := os.Getenv("SERVER_USERNAME")
+	password := os.Getenv("SERVER_PASSWORD")
+
 	// Normally, you'd check the username and password against a database
-	if creds.Username != "user" || creds.Password != "secret_password" {
+	if creds.Username != username || creds.Password != password {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
