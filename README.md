@@ -139,12 +139,4 @@ A Merkle tree is a binary tree of hashes that provides an efficient way to verif
 * JWT Authentication: Users must authenticate with a username and password to receive a JWT token. This token is required for all subsequent interactions with the server.
 
 
-### Contact
-
-Marcelo Kaihara - marcelo.kaihara@protonmail.com
-
-Feel free to reach out if you have any questions or suggestions!
-
-
-
   
